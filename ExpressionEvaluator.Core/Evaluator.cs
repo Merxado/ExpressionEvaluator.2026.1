@@ -1,6 +1,6 @@
 ﻿namespace ExpressionEvaluator.Core;
 
-public class Evaluator
+public static class Evaluator
 {
     public static double Evaluate(string expression)
     {
@@ -27,25 +27,67 @@ public class Evaluator
             if (char.IsDigit(c) || c == '.')
             {
                 string number = "";
-                while (i < expression.Length && (Char.IsDigit(expression[i]) || expression[i] == '.'))
+                while (i < expression.Length && (char.IsDigit(expression[i]) || expression[i] == '.'))
                 {
                     number += expression[i];
                     i++;
                 }
-                else
-                {
-                    tokens.Add(number);
-                    i++;
-                }
+                tokens.Add(number);
             }
-            return tokens;
+            else
+            {
+                tokens.Add(c.ToString());
+                i++;
+            }
         }
+
+        return tokens;
     }
 
-     private static double EvaluatePostfix(List<string> postfix)
+    private static List<string> InfixToPostfix(List<string> tokens)
+    {
+        var output = new List<string>();
+        var stack = new Stack<string>();
+
+        foreach (var token in tokens)
+        {
+            if (double.TryParse(token, System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out _))
+            {
+                output.Add(token);
+            }
+            else if (token == "(")
+            {
+                stack.Push(token);
+            }
+            else if (token == ")")
+            {
+                while (stack.Count > 0 && stack.Peek() != "(")
+                    output.Add(stack.Pop());
+                if (stack.Count > 0)
+                    stack.Pop();
+            }
+            else if (IsOperator(token))
+            {
+                while (stack.Count > 0 && IsOperator(stack.Peek()) &&
+                       ShouldPopOperator(stack.Peek(), token))
+                {
+                    output.Add(stack.Pop());
+                }
+                stack.Push(token);
+            }
+        }
+
+        while (stack.Count > 0)
+            output.Add(stack.Pop());
+
+        return output;
+    }
+
+    private static double EvaluatePostfix(List<string> postfix)
     {
         var stack = new Stack<double>();
- 
+
         foreach (var token in postfix)
         {
             if (double.TryParse(token, System.Globalization.NumberStyles.Any,
@@ -69,13 +111,13 @@ public class Evaluator
                 stack.Push(result);
             }
         }
- 
+
         return stack.Pop();
     }
- 
+
     private static bool IsOperator(string token) =>
         token == "+" || token == "-" || token == "*" || token == "/" || token == "^";
- 
+
     private static int Precedence(string op) => op switch
     {
         "+" or "-" => 1,
@@ -83,9 +125,9 @@ public class Evaluator
         "^" => 3,
         _ => 0
     };
- 
+
     private static bool IsRightAssociative(string op) => op == "^";
- 
+
     private static bool ShouldPopOperator(string top, string current)
     {
         if (IsRightAssociative(current))
