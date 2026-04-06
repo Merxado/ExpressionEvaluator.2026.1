@@ -43,7 +43,7 @@ public static class Evaluator
 
         return tokens;
     }
-
+    //12.5 + 3 ----> ["12.5", "+", "3"]
     private static List<string> InfixToPostfix(List<string> tokens)
     {
         var output = new List<string>();
